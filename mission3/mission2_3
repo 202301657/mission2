@@ -1,0 +1,28 @@
+#!/usr/bin/bash
+
+SWPIN=25
+pinctrl set "$SWPIN" ip 
+pinctrl set "$SWPIN" pu
+
+GPIO_PINS=(8 7 16 20)
+
+for PIN in "${GPIO_PINS[@]}"; do
+	pinctrl set "$PIN" op
+done
+
+while true; do
+	switch_state=$(pinctrl get "$SWPIN" | grep -o 'lo\|hi')
+
+	if [ "$switch_state" = "lo" ]; then
+		n=0 echo "Button pressed, executing domino sequence... "
+		for ((i=0; i<${#GPIO_PINS[@]}; i++)); do
+			pinctrl set "${GPIO_PINS[$n]}" dh
+			sleep 1
+
+			pinctrl set "${GPIO_PINS[$n]}" dl
+
+			n=$(( (n+1) % ${#GPIO_PINS[@]} ))
+		done
+	fi
+	sleep 0.1 
+done

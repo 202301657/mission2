@@ -1,0 +1,39 @@
+#!/usr/bin/bash 
+
+SWPIN=25
+pinctrl set "$SWPIN" ip
+pinctrl set "$SWPIN" pu
+
+GPIO_PINS=(8 7 16 20)
+
+for PIN in "${GPIO_PINS[@]}"; do
+	pinctrl set "$PIN" op
+done
+
+prev_state="hi"
+led_on=false
+
+while true; do
+    switch_state=$(pinctrl get "$SWPIN" | grep -o 'lo\|hi')
+
+    # 버튼이 눌렸을 때 상태가 변화할 때만 실행
+    if [ "$switch_state" = "lo" ] && [ "$prev_state" = "hi" ]; then
+        # LED 토글
+        if [ "$led_on" = false ]; then
+            # LED 켬
+            for PIN in "${GPIO_PINS[@]}"; do
+                pinctrl set "$PIN" dh
+            done
+            led_on=true
+        else 
+            # LED 끔
+            for PIN in "${GPIO_PINS[@]}"; do
+                pinctrl set "$PIN" dl
+            done
+            led_on=false
+        fi
+    fi
+
+    prev_state="$switch_state"
+    sleep 0.2  # 디바운싱 처리
+done

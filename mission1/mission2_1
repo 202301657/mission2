@@ -1,0 +1,25 @@
+#!/usr/bin/bash 
+
+SWPIN=25
+pinctrl set "$SWPIN" ip
+pinctrl set "$SWPIN" pu
+
+GPIO_PINS=(8 7 16 20)
+
+for PIN in "${GPIO_PINS[@]}"; do
+	pinctrl set "$PIN" op
+done
+
+while true; do
+	switch_state=$(pinctrl get "$SWPIN" | grep -o 'lo\|hi')
+	if [ "$switch_state" = "lo" ]; then
+		for ((i=0; i<${#GPIO_PINS[@]}; i++)); do
+			pinctrl set "${GPIO_PINS[i]}" dh
+		done
+	else 
+		for ((i=0; i<${#GPIO_PINS[@]}; i++)); do
+			pinctrl set "${GPIO_PINS[i]}" dl
+		done
+	fi
+	sleep 0.1
+done

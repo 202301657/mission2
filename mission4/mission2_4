@@ -1,0 +1,44 @@
+#!/usr/bin/bash
+
+SWPIN=25
+pinctrl set "$SWPIN" ip 
+pinctrl set "$SWPIN" pu
+
+GPIO_PINS=(8 7 16 20)
+
+for PIN in "${GPIO_PINS[@]}"; do
+	pinctrl set "$PIN" op
+done
+
+cnt=0  # 카운터 초기화
+
+while true; do
+    switch_state=$(pinctrl get "$SWPIN" | grep -o 'lo\|hi')
+
+    # 모든 LED 끄기
+    for PIN in "${GPIO_PINS[@]}"; do
+        pinctrl set "$PIN" dl
+    done
+
+    # 버튼이 눌렸을 때 카운터 증가
+    if [ "$switch_state" = "lo" ]; then
+        cnt=$((cnt+1))
+        sleep 0.2  # 디바운싱을 위한 짧은 대기
+    fi
+
+    # 각 비트에 맞게 LED 순차적으로 켜기
+    if (( (cnt / 1) % 2 )); then
+        pinctrl set "${GPIO_PINS[0]}" dh
+    fi
+    if (( (cnt / 2) % 2 )); then
+        pinctrl set "${GPIO_PINS[1]}" dh
+    fi
+    if (( (cnt / 4) % 2 )); then
+        pinctrl set "${GPIO_PINS[2]}" dh
+    fi
+    if (( (cnt / 8) % 2 )); then
+        pinctrl set "${GPIO_PINS[3]}" dh
+    fi
+
+    sleep 0.1  # 반복 대기
+done
